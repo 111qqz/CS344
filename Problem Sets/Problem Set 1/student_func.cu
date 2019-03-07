@@ -3,7 +3,7 @@
 
 //A common way to represent color images is known as RGBA - the color
 //is specified by how much Red, Grean and Blue is in it.
-//The 'A' stands for Alpha and is used for transparency, it will be
+//The 'A' stands for Alpha and is used for transparency, it will bed
 //ignored in this homework.
 
 //Each channel Red, Blue, Green and Alpha is represented by one byte.
@@ -32,6 +32,7 @@
 //so that the entire image is processed.
 
 #include "utils.h"
+#include <stdio.h>
 
 __global__
 void rgba_to_greyscale(const uchar4* const rgbaImage,
@@ -46,6 +47,20 @@ void rgba_to_greyscale(const uchar4* const rgbaImage,
   //The output (greyImage) at each pixel should be the result of
   //applying the formula: output = .299f * R + .587f * G + .114f * B;
   //Note: We will be ignoring the alpha channel for this conversion
+  int x = blockDim.x * blockIdx.x + threadIdx.x;
+  int y = blockDim.y * blockIdx.y + threadIdx.y;
+  printf("blockDim.x %d blockIdx.x %d threadIdx.x %d x:%d \n", blockDim.x, blockIdx.x, threadIdx.x, x);
+  if ( x < numRows && y < numCols)
+  {
+    int offset = x * numRows + y;
+    greyImage[offset] = .299f * rgbaImage[offset].x + .587f * rgbaImage[offset].y + .114f * rgbaImage[offset].z ;
+    // printf("offset %d\n",offset);
+    // printf("R:%d\n",int(0.299f * rgbaImage[offset].x));
+    // printf("G:%d\n",0.587f * rgbaImage[offset].y);
+    // printf("B:%d\n",0.114f * rgbaImage[offset].z);
+    // printf("R: %d G: %d B: %d\n",rgbaImage[offset].x,rgbaImage[offset].y,rgbaImage[offset].z);
+    
+  }
 
   //First create a mapping from the 2D block and grid locations
   //to an absolute 2D location in the image, then use that to
@@ -57,9 +72,22 @@ void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_r
 {
   //You must fill in the correct sizes for the blockSize and gridSize
   //currently only one block with one thread is being launched
-  const dim3 blockSize(1, 1, 1);  //TODO
-  const dim3 gridSize( 1, 1, 1);  //TODO
+
+  cudaMalloc((void**)&d_rgbaImage, numRows * numCols * sizeof(uchar4));
+  cudaMalloc((void**)&d_greyImage, numRows * numCols * sizeof(unsigned char));
+  cudaMemcpy(d_rgbaImage, h_rgbaImage,numRows * numCols * sizeof(uchar4) , cudaMemcpyHostToDevice);
+  printf("sizeof(uchar4) %lu\n",sizeof(uchar4));
+  // check h_rgbaImage
+  for ( int i = 0 ; i < 4 ; i++)
+  {
+    printf("h_rgba : %d %d %d\n",h_rgbaImage[i].x, h_rgbaImage[i].y, h_rgbaImage[i].z);
+  }
+  printf("cuda malloc finish\n");
+  printf("numRows %lu numCols %lu \n",numRows, numCols);
+  const dim3 blockSize(numCols, 1, 1);  //TODO
+  const dim3 gridSize(numRows, 1, 1);  //TODO
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
+  printf("cuda last error:%d\n",cudaGetLastError());
   
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 

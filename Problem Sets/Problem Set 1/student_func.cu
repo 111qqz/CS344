@@ -47,10 +47,10 @@ void rgba_to_greyscale(const uchar4* const rgbaImage,
   //Note: We will be ignoring the alpha channel for this conversion
   int x = blockDim.x * blockIdx.x + threadIdx.x;
   int y = blockDim.y * blockIdx.y + threadIdx.y;
-  printf("blockDim.x %d blockIdx.x %d threadIdx.x %d x:%d \n", blockDim.x, blockIdx.x, threadIdx.x, x);
-  if ( x < numRows && y < numCols)
+  // printf("blockDim.x %d blockIdx.x %d threadIdx.x %d x:%d \n", blockDim.x, blockIdx.x, threadIdx.x, x);
+  if ( x < numCols && y < numRows)
   {
-    int offset = x * numRows + y;
+    int offset = y * numCols + x;
     greyImage[offset] = .299f * rgbaImage[offset].x + .587f * rgbaImage[offset].y + .114f * rgbaImage[offset].z ;
     // printf("offset %d\n",offset);
     // printf("R:%d\n",int(0.299f * rgbaImage[offset].x));
@@ -72,7 +72,7 @@ void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_r
                       1 + (numRows / blockSize.y),
                       1);
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
-  printf("cuda last error:%d\n",cudaGetLastError());
+  // printf("cuda last error:%d\n",cudaGetLastError());
   
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
 
